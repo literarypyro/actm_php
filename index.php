@@ -8,7 +8,7 @@ require("db.php");
 ?>
 <body>
 <table class='header' align=center>
-<tr><th><h2>Guadalupe</h2></th></tr>
+<tr><th><h2>North Ave.</h2></th></tr>
 </table>
 <?php 
 if(isset($_POST['username'])){
@@ -116,6 +116,7 @@ function searchCA(caname){
 	<select name='username'>
 	<?php
 	$db=retrieveDb();
+	
 	$sql="select * from login where status='active' order by lastName";
 	$rs=$db->query($sql);
 	$nm=$rs->num_rows;

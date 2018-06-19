@@ -87,7 +87,7 @@ if(isset($_GET['ext'])){
 
 <div class='menuHeader'>
 
-Part 1 | <a href='dsr_tickets_a.php<?php echo $clause; ?>'>Part 2</a> | <a href='dsr_tickets_b.php<?php echo $clause; ?>'>Part 3</a> | <a href='dsr_summary_1.php<?php echo $clause; ?>'>Summary</a>
+Part 1 | <a href='dsr_tickets_a.php<?php echo $clause; ?>'>Part 2</a> | <a href='dsr_tickets_b.php<?php echo $clause; ?>'>Part 3</a> | <a href='dsr_summary_2.php<?php echo $clause; ?>'>Summary</a>
 
 <?php 
 if($extAvNM>0){ 
@@ -99,7 +99,13 @@ if($extAvNM>0){
 	
 	}
 } ?>
-| <a href='#' onclick='window.open("generate_dsr.php<?php echo $clause; ?>","_blank")'>Printout</a>
+<?php
+/**
+| <a href='#' onclick='window.open("generate_dsr.php<?php echo $clause; ?>","_blank")'>Printout</a> 
+*/
+?>
+| <a href='#' onclick='window.open("generate_dsr_new.php<?php echo $clause; ?>","_blank")'>New Printout</a>
+
 </div>
 
 <table class='dsrTable' border=1>
@@ -109,23 +115,28 @@ if($extAvNM>0){
 <th rowspan=2>Id No.</th>
 
 <th colspan=2>Single Journey (SJ)</th>
-<th colspan=2>Stored Value (SV)</th>
+<th colspan=2>Discounted Single Journey (DSJT)</th>
 
-<th rowspan=2>Fare Adj. Amt.</th>
-<th rowspan=2>OT Amt.</th>
+<th colspan=3>Stored Value (SV)</th>
+
+<th rowspan=2>Mismatch Entry/Exit</th>
+<th rowspan=2>Excess Time</th>
 <th rowspan=2>Total Amount</th>
 <th rowspan=2>&nbsp;</th>
 </tr>
 <tr class='subheader'>
-<?php 
-for($a=0;$a<2;$a++){
-?>
 <th>Tickets Sold</th>
+
+<th>Amount (P)</th>
+<th>Tickets Sold</th>
+
 <th>Amount (P)</th>
 
-<?php
-}
-?>
+
+<th>Tickets Sold</th>
+<th>Issuance Fee</th>
+<th>Add Value</th>
+
 </tr>
 
 <?php
@@ -183,7 +194,7 @@ for($i=0;$i<$nm;$i++){
 	$subtotal['fare_adjustment']=0;
 	$subtotal['ot_amount']=0;
 	$subtotal['totalAmount']=0;
-
+	$subtotal['svtIssuance']=0;
 	
 
 	$row=$rs->fetch_assoc();
@@ -228,41 +239,84 @@ for($k=0;$k<$nm2;$k++){
 	$svtSold="&nbsp;";
 	$svdSold="&nbsp;";
 	
+	$sold_ticket['sjt']['reg']=0;
+	$sold_ticket['sjt']['disc']=0;
+	$sold_ticket['svc']['reg']=0;
+	$sold_ticket['svc']['add_value']=0;
+	$sold_ticket['svc']['issuance_fee']=0;
+	
+
+
+
 	for($m=0;$m<$allocationNM;$m++){
 		$allocationRow=$allocationRS->fetch_assoc();
-		$sjtSold+=$allocationRow['sjt'];
-		$sjdSold+=$allocationRow['sjd'];
-		$svtSold+=$allocationRow['svt'];
-		$svdSold+=$allocationRow['svd'];
+		$sold_ticket[$allocationRow['ticket_type']][$allocationRow['value_type']]+=$allocationRow['quantity'];
+	
 
-	
-	
+
+
 	}
 	
 
-	$adjustmentSQL="select * from control_sales_amount inner join control_remittance on control_sales_amount.control_id=control_remittance.control_id where remit_log='".$log_id."' and station='".$stationStamp."' and remit_ticket_seller='".$row2['remit_ticket_seller']."' and unit='".$unit."'";
 
+		$sjtSold=$sold_ticket['sjt']['reg'];
+		$sjdSold=$sold_ticket['sjt']['pwd']+$sold_ticket['sjt']['disc'];
+		$svtSold=$sold_ticket['svc']['reg'];
+
+
+
+	$adjustmentSQL="select * from control_sales_amount inner join control_remittance on control_sales_amount.control_id=control_remittance.control_id where remit_log='".$log_id."' and station='".$stationStamp."' and remit_ticket_seller='".$row2['remit_ticket_seller']."' and unit='".$unit."'";
 	$adjustmentRS=$db->query($adjustmentSQL);
 	$adjustmentNM=$adjustmentRS->num_rows;
 	$sjtAmount=0;
+	$svtIssuance=0;
+
+
 	$svtAmount=0;
 	$sjdAmount=0;
 	$svdAmount=0;
 	
+
+	$ticket_amount['sjt']['reg']=0;
+	$ticket_amount['sjt']['disc']=0;
+	$ticket_amount['svc']['reg']=0;
+	$ticket_amount['svc']['add_value']=0;
+	$ticket_amount['svc']['issuance_fee']=0;
+	
+
+
 	
 	for($n=0;$n<$adjustmentNM;$n++){
-		$adjustmentRow=$adjustmentRS->fetch_assoc();
-		$sjtAmount+=$adjustmentRow['sjt']*1;
-		$sjdAmount+=$adjustmentRow['sjd']*1;
-		$svtAmount+=$adjustmentRow['svt']*1;
-		$svdAmount+=$adjustmentRow['svd']*1;
+		$allocationRow=$adjustmentRS->fetch_assoc();
 		
+		$ticket_amount[$allocationRow['ticket_type']][$allocationRow['value_type']]+=$allocationRow['amount'];
+
+
+//		$sjtAmount+=$ticket_amount['sjt']['reg']*1;
+//		$sjdAmount+=$ticket_amount['sjt']['pwd']*1+$ticket_amount['sjt']['disc']*1;
+//		$svtAmount+=$ticket_amount['svc']['bpi']*1+$ticket_amount['svt']['smart']*1+$ticket_amount['svt']['globe']*1+$ticket_amount['svt']['add_value']*1+$ticket_amount['svt']['concessionary']*1;
+//		$svtIssuance+=$ticket_amount['svc']['issuance_fee']*1;
+
+
+
 	}
+
+		$sjtAmount=$ticket_amount['sjt']['reg']*1;
+		$sjdAmount=$ticket_amount['sjt']['pwd']*1+$ticket_amount['sjt']['disc']*1;
+		$svtAmount=$ticket_amount['svc']['bpi']*1+$ticket_amount['svc']['smart']*1+$ticket_amount['svc']['globe']*1+$ticket_amount['svc']['add_value']*1+$ticket_amount['svc']['concessionary']*1;
+		$svtIssuance=$ticket_amount['svc']['issuance_fee']*1;
+
+
+
+
+
+
+
 
 	$totalAmount+=$sjtAmount;
 	$totalAmount+=$sjdAmount;
 	$totalAmount+=$svtAmount;
-	$totalAmount+=$svdAmount;
+	$totalAmount+=$svtIssuance;
 	
 	$ot_amount=0;
 	$fare_adjustment=0;
@@ -274,7 +328,7 @@ for($k=0;$k<$nm2;$k++){
 	$ot_amount=0;	
 	for($n=0;$n<$fareNM;$n++){
 		$fareRow=$fareRS->fetch_assoc();
-		$fare_adjustment+=$fareRow['sjt']+$fareRow['sjd']+$fareRow['svt']+$fareRow['svd']+$fareRow['c'];
+		$fare_adjustment+=$fareRow['sjt']+$fareRow['sjd']+$fareRow['svt']+$fareRow['svd']+$fareRow['c']+$fareRow['pwd']+$fareRow['mismatch'];
 		$ot_amount+=$fareRow['ot'];
 	}
 	$totalAmount+=$fare_adjustment;
@@ -300,11 +354,13 @@ for($k=0;$k<$nm2;$k++){
 	$subtotal['sjdSold']+=$sjdSold;
 	$subtotal['sjdAmount']+=$sjdAmount;
 		
-	$subtotal['svdSold']+=$svdSold;
-	$subtotal['svdAmount']+=$svdAmount;
+//	$subtotal['svdSold']+=$svdSold;
+//	$subtotal['svdAmount']+=$svdAmount;
 	
 	$subtotal['svtSold']+=$svtSold;
 	$subtotal['svtAmount']+=$svtAmount;
+	$subtotal['svtIssuance']+=$svtIssuance*1;
+
 	$subtotal['fare_adjustment']+=$fare_adjustment;
 	$subtotal['ot_amount']+=$ot_amount;
 	$subtotal['totalAmount']+=$totalAmount;
@@ -317,10 +373,18 @@ for($k=0;$k<$nm2;$k++){
 		<td><?php echo $ticket_id; ?></td>
 
 		<td align=right><?php echo number_format($sjtSold*1,0); ?></td>
+
+
+
 		<td align=right><?php echo number_format($sjtAmount*1,2); ?></td>
 		
+		<td align=right><?php echo number_format($sjdSold*1,0); ?></td>
+
+		<td align=right><?php echo number_format($sjdAmount*1,2); ?></td>
 		
 		<td align=right><?php echo number_format($svtSold*1,0); ?></td>
+		<td align=right><?php echo number_format($svtIssuance*1,2); ?></td>
+		
 		<td align=right><?php echo number_format($svtAmount*1,2); ?></td>
 
 		<td align=right><?php echo number_format($fare_adjustment*1,2); ?></td>
@@ -338,9 +402,15 @@ for($k=0;$k<$nm2;$k++){
 		<td><?php echo $ticket_id; ?></td>		
 		
 		<td align=right><?php echo number_format($sjtSold*1,0); ?></td>
+
+
 		<td align=right><?php echo number_format($sjtAmount*1,2); ?></td>
+		<td align=right><?php echo number_format($sjdSold*1,0); ?></td>
+		<td align=right><?php echo number_format($sjdAmount*1,2); ?></td>
 		
 		<td align=right><?php echo number_format($svtSold*1,0); ?></td>
+		<td align=right><?php echo number_format($svtIssuance*1,2); ?></td>
+
 		<td align=right><?php echo number_format($svtAmount*1,2); ?></td>
 
 		<td align=right><?php echo number_format($fare_adjustment*1,2); ?></td>
@@ -372,6 +442,8 @@ if($nm2>0){
 	$grandtotal['svdAmount']+=$subtotal['svdAmount'];
 	
 	$grandtotal['svtSold']+=$subtotal['svtSold'];
+	$grandtotal['svtIssuance']+=$subtotal['svtIssuance'];
+
 	$grandtotal['svtAmount']+=$subtotal['svtAmount'];
 	$grandtotal['fare_adjustment']+=$subtotal['fare_adjustment'];
 	$grandtotal['ot_amount']+=$subtotal['ot_amount'];
@@ -382,10 +454,17 @@ if($nm2>0){
 		<th colspan=3>Subtotal</th>
 		<td align=right><font><?php echo number_format($subtotal["sjtSold"]*1,0); ?></font></td>
 	
-		<td align=right><font><?php echo	number_format($subtotal['sjtAmount']*1,2); ?></font></td> 
+		<td align=right><font><?php echo number_format($subtotal['sjtAmount']*1,2); ?></font></td> 
+		<td align=right><font><?php echo number_format($subtotal["sjdSold"]*1,0); ?></font></td>
 		
+		<td align=right><font><?php echo	number_format($subtotal['sjdAmount']*1,2); ?></font></td> 
 	
 		<td align=right><font><?php echo	number_format($subtotal['svtSold']*1,0); ?></font></td>
+
+
+
+		<td align=right><font><?php echo number_format($subtotal['svtIssuance']*1,2); ?></font></td>
+
 		<td align=right><font><?php echo	number_format($subtotal['svtAmount']*1,2); ?></font></td>
 		<td align=right><font><?php echo	number_format($subtotal['fare_adjustment']*1,2); ?></font></td>
 		<td align=right><font><?php echo	number_format($subtotal['ot_amount']*1,2); ?></font></td>
@@ -400,15 +479,18 @@ if($nm2>0){
 	<tr  class='header'>
 		<th colspan=3>Grand Total</th>
 		<td align=right><font><?php echo number_format($grandtotal["sjtSold"]*1,0); ?></font></td>
-	
-		<td align=right><font><?php echo	number_format($grandtotal['sjtAmount']*1,2); ?></font></td> 
-		
-	
-		<td align=right><font><?php echo	number_format($grandtotal['svtSold']*1,0); ?></font></td>
+		<td align=right><font><?php echo number_format($grandtotal['sjtAmount']*1,2); ?></font></td> 
+		<td align=right><font><?php echo number_format($grandtotal["sjdSold"]*1,0); ?></font></td>		
+		<td align=right><font><?php echo number_format($grandtotal['sjdAmount']*1,2); ?></font></td> 
+		<td align=right><font><?php echo number_format($grandtotal['svtSold']*1,0); ?></font></td>
+
+		<td align=right><font><?php echo number_format($grandtotal['svtIssuance']*1,2); ?></font></td>	
 		<td align=right><font><?php echo	number_format($grandtotal['svtAmount']*1,2); ?></font></td>
 		<td align=right><font><?php echo	number_format($grandtotal['fare_adjustment']*1,2); ?></font></td>
 		<td align=right><font><?php echo	number_format($grandtotal['ot_amount']*1,2); ?></font></td>
 		<td align=right><font><?php echo	number_format($grandtotal['totalAmount']*1,2); ?></font></td>		
+		
+
 		<td>&nbsp;</td>
 		
 	</tr>

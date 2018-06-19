@@ -1,0 +1,20 @@
+DROP TABLE IF EXISTS `finance_afcs`.`control_defective`;
+CREATE TABLE  `finance_afcs`.`control_defective` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `control_id` int(11) NOT NULL,
+  `sj_defective` varchar(100) DEFAULT NULL,
+  `sj_unconfirmed` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=latin1;
+
+DROP TABLE IF EXISTS `finance_afcs`.`unreg_sale`;
+CREATE TABLE  `finance_afcs`.`unreg_sale` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `control_id` varchar(45) NOT NULL,
+  `sj` varchar(45) NOT NULL,
+  `sv` varchar(45) NOT NULL,
+  `issuance_fee` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `control_id` (`control_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4786 DEFAULT CHARSET=latin1;
+

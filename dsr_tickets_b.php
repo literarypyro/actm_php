@@ -101,7 +101,7 @@ if(isset($_GET['ext'])){
 ?></h3>
 <br>
 <div class='menuHeader'>
-<a href='dsr_cash.php<?php echo $clause; ?>'>Part 1</a> | <a href='dsr_tickets_a.php<?php echo $clause; ?>'>Part 2</a> | Part 3 | <a href='dsr_summary_1.php<?php echo $clause; ?>'>Summary</a>
+<a href='dsr_cash.php<?php echo $clause; ?>'>Part 1</a> | <a href='dsr_tickets_a.php<?php echo $clause; ?>'>Part 2</a> | Part 3 | <a href='dsr_summary_2.php<?php echo $clause; ?>'>Summary</a>
 <?php 
 if($extAvNM>0){ 
 	if(isset($_GET['ext'])){ 
@@ -112,35 +112,40 @@ if($extAvNM>0){
 	
 	}
 } ?>
-| <a href='#' onclick='window.open("generate_dsr.php<?php echo $clause; ?>","_blank")'>Printout</a>
+<?php
+/**
+| <a href='#' onclick='window.open("generate_dsr.php<?php echo $clause; ?>","_blank")'>Printout</a> 
+*/
+?>
+| <a href='#' onclick='window.open("generate_dsr_new.php<?php echo $clause; ?>","_blank")'>Printout</a>
 </div>
 <table class='dsrTable' border=1 width=100%>
 <tr class='header'>
 <th rowspan=2>Name of CA</th>
 <th rowspan=2>Name of Ticket Seller</th>
 <th rowspan=2>Id No.</th>
-
-
-<th colspan=4>Remitted Ticket (Loose)</th>
-
-<th colspan=4>Over (Lacking)</th>
-<th colspan=4>Defective Ticket</th>
+<!--
+<th colspan=4>Remitted (Loose)</th>
+-->
+<th colspan=2>Over (Lacking)</th>
+<th colspan=3>Defective Ticket</th>
 <th rowspan=2>&nbsp;</th>
 </tr>
 <tr class='subheader'>
 
 
 <?php
-for($a=0;$a<3;$a++){
+for($a=0;$a<1;$a++){
 ?>
 	<th>SJ</th>
-	<th>DSJ</th>
-	<th>DSV</th>
 	<th>SV</th>
 
 <?php
 }
 ?>
+<th>SJ Defective</th>
+<th>SJ Uncertain</th>
+<th>SV</th>
 </tr>
 
 <?php
@@ -202,6 +207,9 @@ for($i=0;$i<$nm;$i++){
 	
 
 	$subtotal['sjtDefective']=0; 
+
+	$subtotal['sjtUncertain']=0; 
+
 	$subtotal['sjdDefective']=0; 
 	$subtotal['svdDefective']=0; 
 	$subtotal['svtDefective']=0; 
@@ -242,6 +250,8 @@ for($k=0;$k<$nm2;$k++){
 
 	$unsoldRS=$db->query($unsoldSQL);
 	$unsoldNM=$unsoldRS->num_rows;
+
+
 	
 	$sjtLoose=0;
 	$sjdLoose=0;
@@ -281,6 +291,20 @@ for($k=0;$k<$nm2;$k++){
 	
 	
 	}
+
+
+	$sjtUncertain=0;
+
+	$def_sql="select * from control_defective inner join control_remittance on control_defective.control_id=control_remittance.control_id  where  control_id='".$row2['control_id']."'";
+	$def_rs=$db->query($def_sql);
+	$def_nm=$def_rs->num_rows;	
+	for($z=0;$z<$def_nm;$z++){
+		$def_row=$def_rs->fetch_assoc();
+		$sjtDefective+=$def_row['sjt_defective'];
+		$sjtUncertain+=$def_row['sjt_uncertain'];
+	}	
+
+
 	
 	$sjt_physically_defective=0;
 	$sjd_physically_defective=0;
@@ -423,6 +447,10 @@ for($k=0;$k<$nm2;$k++){
 			
 
 	$subtotal['sjtDefective']+=$sjtDefective; 
+	$subtotal['sjtUncertain']+=$sjtUncertain; 
+
+
+
 	$subtotal['sjdDefective']+=$sjdDefective; 
 	$subtotal['svdDefective']+=$svdDefective; 
 	$subtotal['svtDefective']+=$svtDefective; 	
@@ -439,21 +467,21 @@ for($k=0;$k<$nm2;$k++){
 ?>
 		<td><?php echo $ticket_seller; if($unit=="A/D"){ } else { echo " - ".$unit; }  ?></td>
 		<td><?php echo $ticket_id; ?></td>	
-
+<?php
+/*
 
 		<td align=right><?php echo $sjtLoose; ?></td>
 		<td align=right><?php echo $sjdLoose; ?></td>
 		<td align=right><?php echo $svdLoose; ?></td>
 		<td align=right><?php echo $svtLoose; ?></td>		
-
+*/
+?>		
 		<td align=right><?php echo $sjt_label; ?></td>
-		<td align=right><?php echo $sjd_label; ?></td>
-		<td align=right><?php echo $svd_label; ?></td>
 		<td align=right><?php echo $svt_label; ?></td>
 
 		<td align=right><?php echo $sjtDefective; ?></td>
-		<td align=right><?php echo $sjdDefective; ?></td>
-		<td align=right><?php echo $svdDefective; ?></td>
+		<td align=right><?php echo $sjtUncertain; ?></td>
+
 		<td align=right><?php echo $svtDefective; ?></td>		
 		<td><a href='#' onclick="deleteRow('<?php echo $remit_id; ?>','<?php echo $_GET['ext']; ?>')">X</a></td>		
 	</tr>
@@ -501,6 +529,8 @@ if($nm2>0){
 	$grandtotal['svd_label']+=$subtotal['svd_label']; 
 */
 	$grandtotal['sjtDefective']+=$subtotal['sjtDefective']; 
+	$grandtotal['sjtUncertain']+=$subtotal['sjtUncertain']; 
+
 	$grandtotal['sjdDefective']+=$subtotal['sjdDefective']; 
 	$grandtotal['svdDefective']+=$subtotal['svdDefective']; 
 	$grandtotal['svtDefective']+=$subtotal['svtDefective']; 
@@ -508,21 +538,22 @@ if($nm2>0){
 ?>
 <tr class='subheader'>
 <th  colspan=3>Subtotal</th>
-
+<?php
+/*
 
 	<td align=right><font><?php echo $subtotal['sjtLoose']; ?></font></td> 
 	<td align=right><font><?php echo $subtotal['sjdLoose']; ?></font></td> 
 	<td align=right><font><?php echo $subtotal['svdLoose']; ?></font></td> 
 	<td align=right><font><?php echo $subtotal['svtLoose']; ?></font></td> 
-			
+
+*/
+?>			
 	<td align=right><font><?php echo $subtotal['sjt_label']; ?></font></td> 
-	<td align=right><font><?php echo $subtotal['sjd_label']; ?></font></td> 
-	<td align=right><font><?php echo $subtotal['svd_label']; ?></font></td> 
 	<td align=right><font><?php echo $subtotal['svt_label']; ?></font></td> 
 
 	<td align=right><font><?php echo $subtotal['sjtDefective']; ?></font></td> 
-	<td align=right><font><?php echo $subtotal['sjdDefective']; ?></font></td> 
-	<td align=right><font><?php echo $subtotal['svdDefective']; ?></font></td> 
+	<td align=right><font><?php echo $subtotal['sjtUncertain']; ?></font></td> 
+
 	<td align=right><font><?php echo $subtotal['svtDefective']; ?></font></td> 
 	<td>&nbsp;</td>
 	
@@ -566,20 +597,20 @@ if($nm2>0){
 <tr class='header'>
 <th colspan=3>Grand Total</th>
 
-
+<?php
+/*
 	<td align=right><font><?php echo $grandtotal['sjtLoose']; ?></font></td> 
 	<td align=right><font><?php echo $grandtotal['sjdLoose']; ?></font></td> 
 	<td align=right><font><?php echo $grandtotal['svdLoose']; ?></font></td> 
 	<td align=right><font><?php echo $grandtotal['svtLoose']; ?></font></td> 
-			
+*/
+?>			
 	<td align=right><font><?php echo $grandtotal['sjt_label']; ?></font></td> 
-	<td align=right><font><?php echo $grandtotal['sjd_label']; ?></font></td> 
-	<td align=right><font><?php echo $grandtotal['svd_label']; ?></font></td> 
 	<td align=right><font><?php echo $grandtotal['svt_label']; ?></font></td> 
 
 	<td align=right><font><?php echo $grandtotal['sjtDefective']; ?></font></td> 
-	<td align=right><font><?php echo $grandtotal['sjdDefective']; ?></font></td> 
-	<td align=right><font><?php echo $grandtotal['svdDefective']; ?></font></td> 
+	<td align=right><font><?php echo $grandtotal['sjtUncertain']; ?></font></td> 
+
 	<td align=right><font><?php echo $grandtotal['svtDefective']; ?></font></td> 
 	<td>&nbsp;</td>	
 	
